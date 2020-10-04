@@ -1,0 +1,34 @@
+[common]
+debug=False
+tmp_directory=/tmp/corsica/
+allowed_browsers = chrome, firefox
+
+[logging]
+log_path = log/
+level = DEBUG
+
+[mysql]
+host = mysql
+port = 3306
+database = firmware
+user = firmware
+password = test
+
+[flask_api]
+secret_key = 'ABCDE'
+log_extended_information = True
+debug=False
+path=/api
+
+[crawler]
+tmp_folder=/tmp/crawler/
+
+[generator]
+thread_count=1
+
+[testsuite]
+target_path = /tmp/testsuite/main
+css_target_path = /tmp/testsuite/css
+
+[web]
+secret_key=SECRETKEY

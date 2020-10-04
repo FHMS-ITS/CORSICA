@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% load humanize %}
+
+{% block title %}About - corsica{% endblock %}
+
+{% block javascript %}{% endblock %}
+
+{% block content %}
+
+    <div class="mx-auto col-md-6" >
+
+    <h2>About this Project</h2>
+    <br/>
+    <div class="card">
+        <h5 class="card-header">About</h5>
+      <div class="card-body">
+        <p class="card-text text-justify">
+        corsica is a research project at the Münster University of Applied Sciences.
+        The project aims at collecting information from those parts of the Internet that are not directly accessible
+        from the Internet.
+        A home user’s Intranet is one example for this. These Intranets may host devices such as IP cameras, or
+        Wifi-enabled baby phones or toasters.
+        There is evidence that many of the devices contain critical security vulnerabilities such as well-known,
+        hard-coded user credentials.
+        Criminals have been targeting these hidden devices in the last months, e.g. to build the <a
+                href="https://en.wikipedia.org/wiki/Mirai_(malware)" target="_blank"><abbr title="attribute">Mirai
+            botnet</abbr> <span class="glyphicon glyphicon-new-window"></span></a> which was responsible for several
+        large scale attacks against organizations.
+        </p></div></div>
+    <br/>
+
+    <br/>
+    <div class="card">
+        <h5 class="card-header">Point of Contact</h5>
+      <div class="card-body">
+
+        <p class="card-text text-justify">
+        <address>
+            <strong>FH Münster</strong><br/>
+            - University of Applied Sciences -<br/>
+            IT security lab <br/><br/>
+            Hüfferstraße 27<br/>
+            D-48149 Münster<br/>
+            itsscan@fh-muenster.de
+        </address></p></div></div>
+    <br/><br/>
+    </div>
+{% endblock %}

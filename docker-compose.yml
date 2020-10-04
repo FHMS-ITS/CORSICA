@@ -1,0 +1,105 @@
+version: '3.5'
+
+services:
+  database:
+    build: docker/mariadb
+    image: corisca-db
+    restart: unless-stopped
+    container_name: corisca-database
+    environment:
+    - MYSQL_ROOT_PASSWORD=firmalyse
+    - MYSQL_USER=firmware
+    - MYSQL_DATABASE=firmware
+    - MYSQL_PASSWORD=chTGHuSEZm8EmmFW
+    volumes:
+    - /opt/data/current/mysql/data:/var/lib/mysql
+    - /opt/data/current/mysql/log:/var/log/mysql
+    networks:
+    - corisca-network
+
+  corsica-daemon:
+    build:
+      context: ./
+      dockerfile: ./docker/core/Dockerfile
+    image: corisca-daemon
+    container_name: corisca-app-daemon
+    depends_on:
+    - database
+    volumes:
+    - ./:/srv/corisca/
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ./code/config/config.ini:/etc/corisca/config.ini
+    - /opt/data/current/daemon:/opt/data/
+    - /opt/data/current/log/:/tmp/log/
+    - /tmp/corisca/:/tmp/corisca/
+    networks:
+    - corisca-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: corisca-phpmyadmin
+    environment:
+    - PMA_ARBITRARY=1
+    - PMA_HOST=corisca-database
+    - VIRTUAL_HOST=<DOMAIN_PMA>
+    depends_on:
+    - database
+    restart: unless-stopped
+    volumes:
+    - /sessions
+    networks:
+    - corisca-network
+
+  web-main:
+    build:
+      context: ./
+      dockerfile: ./docker/web/app/Dockerfile
+    image: corisca-web-main
+    container_name: corisca-web-main
+    environment:
+      - VIRTUAL_HOST=<hostname>
+    depends_on:
+    - web-migration
+    - database
+    expose:
+    - 80
+    volumes:
+    - ./apps/web/main/main/:/app/main/
+    - ./code/config/config.ini:/app/config.ini
+    - /opt/data/current/log/:/tmp/log/
+    - /tmp/corisca/:/tmp/corisca/
+    networks:
+    - corisca-network
+
+  web-migration:
+    build:
+      context: ./
+      dockerfile: ./docker/web/app/Dockerfile
+    image: corisca-web-main
+    command: python3 manage.py migrate
+    container_name: corisca-web-migration
+    depends_on:
+    - database
+    volumes:
+    - ./apps/web/main/main/:/app/main/
+    - /etc/corisca/config.ini:/app/config.ini
+    networks:
+    - corisca-network
+
+
+  web-proxy:
+    image: jwilder/nginx-proxy
+    container_name: corisca-web-proxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /opt/ssl/:/etc/nginx/certs
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+    - corisca-network
+
+networks:
+  corisca-network:
+    driver: bridge
+    name: corisca-network

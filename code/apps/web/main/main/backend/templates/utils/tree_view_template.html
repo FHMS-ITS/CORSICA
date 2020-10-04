@@ -1,0 +1,25 @@
+<li>
+    {% if node.left or node.right %}
+        <div>{{ node.path }}</div>
+        <ul>
+            {% if node.left %}
+                {% with node=node.left template_name="utils/tree_view_template.html" %}
+                    {% include template_name %}
+                {% endwith %}
+            {% endif %}
+
+            {% if node.right %}
+                {% with node=node.right template_name="utils/tree_view_template.html" %}
+                    {% include template_name %}
+                {% endwith %}
+            {% endif %}
+
+        </ul>
+    {% else %}
+
+        <div data-toggle="modal" data-target="#tree-leaf-detail-modal" data-web-roots="{{ node.web_roots }}"
+             class="tree-leaf"
+             data-leaf-items="| {% for firm in node.firmwares %} {{ firm.vendor }} {{ firm.devicename }} {{ firm.version }} |{% endfor %}">
+            {{ node.web_roots_count }}
+        </div>
+    {% endif %}

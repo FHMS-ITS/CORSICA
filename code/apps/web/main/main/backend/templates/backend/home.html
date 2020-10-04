@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+
+{% load humanize %}
+
+{% block title %}Dashboard - corsica{% endblock %}
+
+{% block content %}
+    <h2><i class="fas fa-chart-line"></i>&nbsp;&nbsp;Dashboard</h2>
+
+
+    <hr>
+
+    <div class="row">
+        <div class=" col-md-6">
+            <div class="card">
+                <div class="card-header">Actions</div>
+
+                <ul class="list-group list-group-flush">
+                    <a id="btn-get-shodan-devices" class="list-group-item list-group-item-action">
+                        <i class="fas fa-play"></i>&nbsp;&nbsp;&nbsp;Get Shodan Devices
+                    </a>
+                    <a id="btn-run-crawler" class="list-group-item list-group-item-action">
+                        <i class="fas fa-play"></i>&nbsp;&nbsp;&nbsp;Run Crawler
+                    </a>
+                    <a id="btn-run-generator" class="list-group-item list-group-item-action">
+                        <i class="fas fa-play"></i>&nbsp;&nbsp;&nbsp;Run Generator
+                    </a>
+                    <a id="btn-run-tree-generator" class="list-group-item list-group-item-action">
+                        <i class="fas fa-play"></i>&nbsp;&nbsp;&nbsp;Run Tree Generator
+                    </a>
+                    <a id="btn-run-calculate-lugins" class="list-group-item list-group-item-action">
+                        <i class="fas fa-play"></i>&nbsp;&nbsp;&nbsp;Run Plugin Analyser
+                    </a>
+                    <a id="btn-run-local-test-suite" class="list-group-item list-group-item-action">
+                        <i class="fas fa-play"></i>&nbsp;&nbsp;&nbsp;Run Local Test Suite
+                    </a>
+                    <a id="btn-run-fingerprinter" class="list-group-item list-group-item-action">
+                        <i class="fas fa-play"></i>&nbsp;&nbsp;&nbsp;Run Fingerprinter
+                    </a>
+                    <!--<a class="list-group-item list-group-item-action">Run Remote Test Suite</a>-->
+                </ul>
+
+
+            </div>
+        </div>
+        <div class=" col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Latest Jobs
+                </div>
+                <div class="card-body">
+                    <table class="table" id="tbl_job">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Created</th>
+                            <th>Service</th>
+                            <th>Action</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tbl_job_body">
+                                <tr>
+                                    <td colspan="6"><br /><br /><h3 style="text-align: center;"><i class="fas fa-spinner"></i> Loading...</h3><br /><br /></td>
+                                </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br/>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">Log File
+                    <small>corsica_daemon.log</small>
+                </div>
+                <div class="card-body">
+                    <pre id="log_content" style="height:300px;"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br/>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">CPU and Memory usage</div>
+                <div class="card-body" id="progress-bar-body">
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="job-detail-modal" tabindex="-1" role="dialog" aria-labelledby="lbl-job-info-modal"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="lbl-job-info-modal">Job Info</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table" id="tbl_job_details" style="width:100%;">
+                        <tr>
+                            <th>ID</th>
+                            <td id="td-job-id"></td>
+                        </tr>
+                        <tr>
+                            <th>Service</th>
+                            <td id="td-job-service"></td>
+                        </tr>
+                        <tr>
+                            <th>Action</th>
+                            <td id="td-job-action"></td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td><span id="td-job-status"></span></td>
+                        </tr>
+                        <tr>
+                            <th>in-data</th>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <pre id="td-job-in_data"></pre>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>out-data</th>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <pre id="td-job-out_data"></pre>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>log</th>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <pre id="td-job-log"></pre>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block stylesheet %}
+    <style>
+        .modal-lg {
+            max-width: 1200px;
+        }
+
+        #tbl_job_details td {
+            max-width: 1100px;
+        }
+    </style>
+{% endblock %}
+{% block javascript %}
+    <script>
+        create_progress_bars();
+
+        function create_progress_bars() {
+            $.ajax({
+                url: '/api/cpu_mem_info_view/',
+                method: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    var cpu_info = data['cpu_info'];
+                    var div = $('#progress-bar-body');
+                    var row;
+                    for (var i = 0; i < cpu_info.length; i++) {
+                        if (i % 6 === 0) {
+                            if (row)
+                                div.append($('<br/>'), row);
+                            row = $("<div>").addClass("row");
+                        }
+                        var cpu_data = process_cpu_data(cpu_info[i]);
+                        row.append(
+                            $('<div>').addClass("col-2").append(
+                                $('<div>').attr("id", 'cpu-txt-' + i).html('<i class="fas fa-microchip"></i>;&nbsp;&nbsp;CPU&nbsp;' + (i + 1) + ': ' + cpu_data['total'] + '%'),
+                                $('<div>').addClass("progress").append(
+                                    $('<div>').addClass("progress-bar bg-success").attr("id", 'cpu-bar-' + i + '-user').css('width', cpu_data['user'] + '%'),
+                                    $('<div>').addClass("progress-bar bg-warning").attr("id", 'cpu-bar-' + i + 'kernel').css('width', cpu_data['kernel'] + '%'),
+                                    $('<div>').addClass("progress-bar bg-danger").attr("id", 'cpu-bar-' + i + 'misc').css('width', cpu_data['misc'] + '%')
+                                )
+                            )
+                        )
+                    }
+                    var mem_info = data['mem_info'];
+                    var mem_data = {
+                        'Cached': mem_info['Cached'] / mem_info['Total'] * 100,
+                        'Buffers': mem_info['Buffers'] / mem_info['Total'] * 100,
+                        'used': mem_info['Used']  / mem_info['Total'] * 100
+                    };
+                    row.append(
+                        $('<div>').addClass("col-12").append($('<br/>'),
+                            $('<div>').attr("id", 'mem-txt').html('<i class="fas fa-memory"></i></i>&nbsp;&nbsp;Memory Usage: ' + mem_info['Percent'] + '% ['+ formatBytes(mem_info['Used'],2) +'/'+ formatBytes(mem_info['Total'],2)+']'),
+                            $('<div>').addClass("progress").append(
+                                $('<div>').addClass("progress-bar bg-success").attr("id", 'mem-bar-used').css('width', mem_data['Used'] + '%'),
+                                $('<div>').addClass("progress-bar bg-primary").attr("id", 'mem-bar-buffers').css('width', mem_data['Buffers'] + '%'),
+                                $('<div>').addClass("progress-bar bg-warning").attr("id", 'mem-bar-cached').css('width', mem_data['Cached'] + '%')
+                            )
+                        )
+                    );
+                    div.append($('<br/>'), row);
+                }
+            });
+        }
+
+        function formatBytes(bytes,decimals) {
+           if(bytes == 0) return '0 Bytes';
+           var k = 1024,
+               dm = decimals || 2,
+               sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
+               i = Math.floor(Math.log(bytes) / Math.log(k));
+           return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function process_cpu_data(cpu_data) {
+            var ret = {
+                'user': cpu_data[0] + cpu_data[1],
+                'kernel': cpu_data[2],
+                'misc': cpu_data[4] + cpu_data[5] + cpu_data[6] + cpu_data[7] + cpu_data[8] + cpu_data[9]
+            };
+            ret['total'] = (ret['user'] + ret['kernel'] + ret['misc']).toFixed(0);
+            return ret
+        }
+
+        function refresh_cpu_data() {
+            $.ajax({
+                url: '/api/cpu_mem_info_view/',
+                method: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    var cpu_info = data['cpu_info'];
+                    var mem_info = data['mem_info'];
+                    var mem_data = {
+                        'Cached': mem_info['Cached'] / mem_info['Total'] * 100,
+                        'Buffers': mem_info['Buffers'] / mem_info['Total'] * 100,
+                        'used': mem_info['Used']  / mem_info['Total'] * 100
+                    };
+                    for (var i = 0; i < cpu_info.length; i++) {
+                        var cpu_data = process_cpu_data(cpu_info[i]);
+                        $('#cpu-bar-' + i + '-user').css('width', cpu_data['user'] + '%');
+                        $('#cpu-bar-' + i + 'kernel').css('width', cpu_data['kernel'] + '%');
+                        $('#cpu-bar-' + i + 'misc').css('width', cpu_data['misc'] + '%');
+                        $('#cpu-txt-' + i).html('<i class="fas fa-microchip"></i>&nbsp;&nbsp;CPU&nbsp;' + (i + 1) + ': ' + cpu_data['total'] + '%');
+                        $('#mem-txt').html('<i class="fas fa-memory"></i>&nbsp;&nbsp;Memory Usage: ' + mem_info['Percent'] + '% ['+ formatBytes(mem_info['Used'],4) +'/'+ formatBytes(mem_info['Total'],4)+']'),
+                        $('#mem-bar-used').css('width', mem_data['Used'] + '%'),
+                        $('#mem-bar-buffers').css('width', mem_data['Buffers'] + '%'),
+                        $('#mem-bar-cached').css('width', mem_data['Cached'] + '%')
+
+
+
+                    }
+                }
+            });
+        }
+
+
+        $('#btn-run-generator').click(function () {
+            add_job('generator', 'all_no_tree');
+        });
+        $('#btn-run-tree-generator').click(function () {
+            add_job('generator', 'tree');
+        });
+
+        $('#btn-run-crawler').click(function () {
+            add_job('crawler', 'crawl');
+        });
+        $('#btn-get-shodan-devices').click(function () {
+            add_job('crawler', 'shodan');
+        });
+        $('#btn-run-local-test-suite').click(function () {
+            add_job('test_suite', 'local');
+        });
+        $('#btn-run-fingerprinter').click(function () {
+            add_job('fingerprinter', 'run');
+        });
+        $('#btn-run-calculate-lugins').click(function () {
+            add_job('fingerprinter', 'calculate_plugins');
+        });
+
+
+        $('#btn-refresh-jobs').click(function () {
+            refresh_job_table();
+        });
+
+        $('#job-detail-modal').on('shown.bs.modal', function (e) {
+            var button = $(e.relatedTarget);
+            var job_id = button.data('job-id');
+
+            $('#td-job-id').empty();
+            $('#td-job-service').empty();
+            $('#td-job-action').empty();
+            $('#td-job-status').empty();
+            $('#td-job-in_data').empty();
+            $('#td-job-out_data').empty();
+            $('#td-job-log').empty();
+
+
+            $.ajax({
+                url: '/api/jobs/' + job_id,
+                method: 'GET',
+                data: {'humanize': true},
+                dataType: 'json',
+                success: function (data) {
+                    var elem = data['data'][0];
+
+                    for (var dat in elem) {
+                        var ret;
+                        try {
+                            ret = JSON.stringify(JSON.parse(elem[dat]), undefined, 2);
+                        } catch (e) {
+                            ret = elem[dat];
+                        }
+                        $('#td-job-' + dat).text(ret);
+                    }
+                    $('#job-detail-modal').modal('handleUpdate')
+                }
+            });
+
+        });
+        {% if request.session.auto_refresh %}
+            register_ajax_interval('job_table', 'refresh_job_table()', 3000);
+            register_ajax_interval('log_view', 'get_log_content()', 3000);
+            register_ajax_interval('refresh_cpu_data', 'refresh_cpu_data()', 1000);
+
+        {% else %}
+            refresh_job_table();
+            get_log_content();
+        {% endif %}
+
+        $('.btn-interval').click(function () {
+            var button = $(this);
+            var func = {
+                'job_table': {'func': 'refresh_job_table()', 'interval': 3000},
+                'log_view': {'func': 'get_log_content()', 'interval': 3000},
+                'refresh_cpu_data': {'func': 'refresh_cpu_data()', 'interval': 1000}
+            };
+            for (var id in func) {
+                if (button.data('state') && !get_ajax_interval_status(id)) {
+                    register_ajax_interval(id, func[id]['func'], func[id]['interval']);
+                } else {
+                    clear_ajax_interval(id);
+                }
+            }
+        })
+    </script>
+{% endblock %}

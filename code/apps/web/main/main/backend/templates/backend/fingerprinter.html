@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% load humanize %}
+
+{% block title %}Fingerprinter - corsica{% endblock %}
+
+{% block content %}
+    <h2> <i class="fas fa-fingerprint"></i>&nbsp;&nbsp;Fingerprinter</h2>
+    <hr>
+    <br/>
+    <form action="/#" id="frm-add-addresses">
+        <div class="form-group">
+            <label for="input-addresses">Addresses to Fingerprint <br/>One by line. Format: [http(s)]://[address]:[port]</label>
+            <textarea style="height:200px" class="form-control" name="addresses" id="input-addresses"
+                      required>{{ device_ips }}</textarea>
+        </div>
+        <div class="form-group">
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-secondary active">
+                    <input type="radio" name="browser" id="input-browser" value="chrome" autocomplete="off" checked>
+                    Chrome
+                </label>
+                <label class="btn btn-secondary">
+                    <input type="radio" name="browser" id="input-browser" value="firefox" autocomplete="off"> Firefox
+                </label>
+            </div>
+        </div>
+        {% csrf_token %}
+        <button type="submit" class="btn btn-dark">Submit</button>
+    </form>
+
+    <br/><br/>
+
+    <table class="table table-striped table-sm" id="tbl-fingerprinter-elements">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Address</th>
+            <th>Status</th>
+            <th>Browser</th>
+            <th>Requests</th>
+            <th>Result</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td colspan="6"><br /><br /><h2 style="text-align: center;"><i class="fas fa-spinner"></i> Loading...</h2><br /><br /></td>
+        </tr>
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block javascript %}
+    <script>
+        $('#frm-add-addresses').submit(function () {
+            var input_addresses = $('#input-addresses');
+            var input_browser = $('#input-browser:checked');
+
+            var dat = {
+                "addresses": input_addresses.val(),
+                "browser": input_browser.val()
+            };
+            $.ajax({
+                url: '/api/fingerprinter/elements/',
+                method: 'POST',
+                data: dat,
+                dataType: 'json',
+                success: function (data) {
+                    input_addresses.val("");
+                    $.notify({
+                        message: 'Entries Created'
+                    }, {
+                        type: 'success',
+                        placement: {'from': 'top'},
+                        offset: {'x': 20, 'y': 60},
+                        delay: 2000
+                    });
+                    refresh_fingerprinter_table();
+                },
+                error: function (data) {
+                    $.notify({
+                        message: 'Error: ' + data.responseJSON['message']
+                    }, {
+                        type: 'danger',
+                        placement: {'from': 'top'},
+                        offset: {'x': 20, 'y': 60},
+                        delay: 2000
+                    });
+                }
+            });
+            return false;
+        });
+
+        function refresh_fingerprinter_table() {
+            $.ajax({
+                url: '/api/fingerprinter/elements/',
+                method: 'GET',
+                data: {'humanize': true, 'reverse_order': true},
+                dataType: 'json',
+                success: function (data) {
+                    var tbody = $('#tbl-fingerprinter-elements tbody');
+                    tbody.empty();
+                    $.each(data['data'], function (i, item) {
+                        var tr = $('<tr>');
+                        var result_elem_td = $('<td>');
+                        if (item.result['result_elements']) {
+                            if (item.result['result_elements'].length === 0) {
+                                tr.addClass('table-danger');
+                                result_elem_td.append(document.createTextNode('Not recognized '));
+                            } else {
+                                if (item.result['result_elements'].length === 1)
+                                    tr.addClass('table-success');
+                                else
+                                    tr.addClass('table-warning');
+
+                                for (var id in item.result['result_elements']) {
+                                    var firm = item.result['result_elements'][id];
+                                    result_elem_td.append(document.createTextNode(firm['vendor'] + ' ' + firm['devicename']));
+                                    result_elem_td.append('<br />');
+                                }
+                            }
+                        }
+                        tr.append(
+                            $('<td>').text(item.id),
+                            $('<td>').text(item.url),
+                            $('<td>').text(item.status),
+                            $('<td>').text(item.browser),
+                            $('<td>').text(item.result.request_count),
+                            result_elem_td
+                        );
+                        tbody.append(tr);
+                    });
+                }
+            });
+
+        };
+
+        {% if request.session.auto_refresh %}
+            register_ajax_interval('fingerprinter_table', 'refresh_fingerprinter_table()', 3000);
+        {% else %}
+            refresh_fingerprinter_table();
+        {% endif %}
+
+        $('.btn-interval').click(function () {
+            var button = $(this);
+            var func = {'fingerprinter_table': 'refresh_fingerprinter_table()'};
+            for (var id in func) {
+                if (button.data('state') && !get_ajax_interval_status(id)) {
+                    register_ajax_interval(id, func[id], 3000);
+                } else {
+                    clear_ajax_interval(id);
+                }
+            }
+
+        })
+    </script>
+
+{% endblock %}

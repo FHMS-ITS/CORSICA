@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+</body>
+
+<script src="../data/data.js"></script>
+<script src="../data/devices.js"></script>
+<script src="ping.js"></script>
+<script src="tester.js"></script>
+
+<script>
+    var total_device_count = 0;
+    var device_status = {'online': [], 'offline': []};
+    var hash = location.hash.substr(1);
+
+
+    function callback_ip_detection(address, fw_id, online) {
+        var data = {'address': address, 'fw_id': fw_id};
+        if (online) {
+            device_status['online'].push(data);
+        }
+        else
+            device_status['offline'].push(data);
+
+        if (total_device_count === (device_status['online'].length + device_status['offline'].length)) {
+            for (var i in device_status['online'])
+                fingerprint(device_status['online'][i]['address'], device_status['online'][i]['fw_id']);
+        }
+    }
+
+    if (devices[hash]) {
+        total_device_count = devices[hash].length;
+        for (var i in devices[hash]) {
+            PingModule.ping(devices[hash][i], hash, callback_ip_detection);
+        }
+    }
+
+
+</script>
+
+</html>

@@ -1,0 +1,1 @@
+docker-compose exec corsica-daemon python3 corsicacli.py $@

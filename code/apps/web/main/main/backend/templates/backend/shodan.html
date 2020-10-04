@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% load humanize %}
+
+{% block title %}Shodan Queries - corsica{% endblock %}
+
+{% block javascript %}{% endblock %}
+
+{% block content %}
+    <h2><i class="fas fa-cloud-download-alt"></i>&nbsp;&nbsp;Shodan Queries</h2>
+    <hr>
+    <br/>
+    <form method="POST">
+        <div class="form-group">
+            <label for="inp-query">Shodan Query</label>
+            <input type="text" name="query" class="form-control" id="inp-query" placeholder="Enter Shodan Query"
+                   required>
+        </div>
+        {% csrf_token %}
+        <button onclick="add_shodan_query($('#inp-query').text())" class="btn btn-dark">Submit</button>
+    </form>
+
+    <br/><br/>
+
+    <table class="table table-striped table-sm">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Query</th>
+            <th># of Devices</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for info in queries %}
+
+            <tr>
+                <td>{{ info.query.id }}</td>
+                <td>{{ info.query.query }}</td>
+                <td>{{ info.device_count }}</td>
+                <td>
+                    {% if info.device_count > 0 %}
+                        <button class="btn btn-sm btn-danger disabled">DEL</button>
+                    {% else %}
+                        <a class="btn btn-sm btn-danger" onclick="delete_shodan_query({{ info.query.id }});">DEL</a>
+                    {% endif %}
+                </td>
+            </tr>
+
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <br/><br/>
+    {% for entry in queries %}
+        <h5>Query {{ entry.query.id }} - {{ entry.query.query }}
+            <small>({{ entry.device_count }} Devices)</small>
+        </h5>
+
+        <table class="table table-striped table-sm">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Address</th>
+                <th>Port</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for device in entry.devices %}
+
+                <tr>
+                    <td>{{ device.id }}</td>
+                    <td>{{ device.address }}</td>
+                    <td>{{ device.port }}</td>
+                    <td>{{ device.status }}</td>
+                </tr>
+
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+
+{% endblock %}

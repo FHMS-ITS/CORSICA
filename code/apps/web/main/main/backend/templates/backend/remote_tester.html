@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% load humanize %}
+
+{% block title %}Firmware - Remote Tester{% endblock %}
+
+{% block content %}
+
+    <h2><i class="fas fa-broadcast-tower"></i>&nbsp;&nbsp;Remote Tester</h2>
+    <hr>
+    <br/>
+    <button onclick="run_remote_test_suite_remaining($(this))" class="btn btn-dark" data-fw-id="{{ firmware.id }}"
+            data-browser="chrome" id="btn-run-remote-test-suite">Test Remaining in Chrome
+    </button>
+    <button onclick="run_remote_test_suite_remaining($(this))" class="btn btn-dark" data-fw-id="{{ firmware.id }}"
+            data-browser="firefox" id="btn-run-remote-test-suite">Test Remaining in Firefox
+    </button>
+    <button onclick="run_remote_test_suite_docker_remaining($(this))" class="btn btn-dark" data-fw-id="{{ firmware.id }}"
+            data-browser="chrome" id="btn-run-remote-test-suite">Test Remaining in Docker with Chrome
+    </button>
+
+    <br/><br/><br/>
+    <h5>Numbers</h5>
+    <table class="table table-sm" style="width:200px;">
+        <tr class="table-success">
+            <td>Correct:</td>
+            <td>{{ numbers.correct }}</td>
+        </tr>
+        <tr class="table-warning">
+            <td>Multiple:</td>
+            <td>{{ numbers.multiple }}</td>
+        </tr>
+        <tr class="table-danger">
+            <td>Wrong:</td>
+            <td>{{ numbers.incorrect }}</td>
+        </tr>
+        <tr>
+            <td>Error:</td>
+            <td>{{ numbers.error }}</td>
+        </tr>
+    </table>
+    <table class="table table-striped table-sm">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Firmware ID</th>
+            <th>Time</th>
+            <th>Browser</th>
+            <th>Online</th>
+            <th>Offline</th>
+            <th>Correct</th>
+            <th>Incorrect</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for result in results %}
+
+            <tr class="{% if result.count.incorrect == 0 %}table-success{% elif result.count.correct > 0 and result.count.incorrect > 0 %}table-warning{% else %}table-danger{% endif %}"
+                data-toggle="modal" data-target="#test-detail-modal" data-test-id="{{ result.id }}">
+                <td>{{ result.id }}</td>
+                <td>{{ result.fw_id }}</td>
+                <td>{{ result.date|naturaltime }}</td>
+                <td>{{ result.browser }}</td>
+                <td>{{ result.count.online }}</td>
+                <td>{{ result.count.offline }}</td>
+                <td>{{ result.count.correct }} [{% for elem in result.count.correct_elem %}
+                    {{ elem.requests }} {% endfor %}]
+                </td>
+                <td>{{ result.count.incorrect }}</td>
+            </tr>
+
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="modal fade" id="test-detail-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table" id="tbl_test_details" style="max-width:100px;">
+                        <tr>
+                            <th>ID</th>
+                            <td id="td-test-id"></td>
+                        </tr>
+                        <tr>
+                            <th>Service</th>
+                            <td id="td-test-date"></td>
+                        </tr>
+                        <tr>
+                            <th>Action</th>
+                            <td id="td-test-browser"></td>
+                        </tr>
+                        <tr>
+                            <th>result</th>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <pre id="td-test-result"></pre>
+                            </td>
+                        </tr>
+
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block stylesheet %}
+    <style>
+        .modal-lg {
+            max-width: 1200px;
+        }
+
+        #tbl_job_details td {
+            max-width: 1100px;
+        }
+    </style>
+{% endblock %}
+{% block javascript %}
+    <script>
+
+        function run_remote_test_suite_remaining(button) {
+            add_job('test_suite', 'remote_single', {
+                'test_ids':{{firmware_without_test}},
+                'browser': button.data('browser')
+            });
+            button.addClass("btn-success");
+        }
+        function run_remote_test_suite_docker_remaining(button) {
+            add_job('fingerprinter', 'run_docker_fingerprinter', {
+                'ids':{{firmware_without_test}},
+                'browser': button.data('browser')
+            });
+            button.addClass("btn-success");
+        }
+
+        $('#test-detail-modal').on('shown.bs.modal', function (e) {
+            var button = $(e.relatedTarget);
+            var test_id = button.data('test-id');
+
+            $('#td-test-id').empty();
+            $('#td-test-firmware').empty();
+            $('#td-test-browser').empty();
+            $('#td-test-result').empty();
+
+
+            $.ajax({
+                url: '/api/tests/' + test_id,
+                method: 'GET',
+                data: {'humanize': true},
+                dataType: 'json',
+                success: function (data) {
+                    var elem = data['data'][0];
+
+                    for (var dat in elem) {
+                        var ret;
+                        try {
+                            ret = JSON.stringify(JSON.parse(elem[dat]), undefined, 2);
+                        } catch (e) {
+                            ret = elem[dat];
+                        }
+                        $('#td-test-' + dat).text(ret);
+                    }
+                    $('#test-detail-modal').modal('handleUpdate')
+                }
+            });
+
+        });
+    </script>
+{% endblock %}

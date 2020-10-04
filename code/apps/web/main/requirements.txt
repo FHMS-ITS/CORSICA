@@ -1,0 +1,6 @@
+django
+mysqlclient
+unipath
+configparser
+djangorestframework
+psutil

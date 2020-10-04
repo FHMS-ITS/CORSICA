@@ -1,0 +1,11 @@
+sqlalchemy
+requests
+pyjsparser
+tinycss
+Pillow
+checksumdir
+docker
+selenium
+beautifultable
+pymysql
+shodan

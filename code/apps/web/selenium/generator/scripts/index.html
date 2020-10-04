@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+</body>
+<script src="jquery.js"></script>
+<script src="md5.js"></script>
+<script src="../data/data.js"></script>
+<script src="core.js"></script>
+<script>
+(function(proxied) {
+  window.alert = function() {
+    return false;
+  };
+})(window.alert);
+document.write = function(msg) {
+}
+</script>
+<script>do_generation();</script>
+</html>

@@ -1,0 +1,46 @@
+<br/><br/>
+{{ error }}
+<table class="table table-striped table-sm">
+    <thead>
+    <tr>
+        <th>File Name</th>
+        <th>Hash</th>
+        <th>Count</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for file in files|dictsort:"count" %}
+        <tr>
+            <td>{{ file.path }}</td>
+            <td>{{ file.hash }}</td>
+            <td>{{ file.web_roots }}</td>
+        </tr>
+
+    {% endfor %}
+    </tbody>
+</table>
+
+
+<table class="table table-striped table-sm">
+    <thead>
+    <tr>
+        <th>File Name</th>
+        <th>Hash</th>
+        <th>Path</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for info in web_roots %}
+        <tr>
+            <th colspan="3">{{ info.web_root_id }}</th>
+        </tr>
+        {% for file in info.files %}
+            <tr class="{% if target.status == -1 %}table-danger{% elif target.status == 5 %}table-success{% else %}table-warning{% endif %}">
+                <td>{{ file.web_full_path }}</td>
+                <td>{{ file.hash }}</td>
+                <td>{{ file.local_path }}</td>
+            </tr>
+        {% endfor %}
+    {% endfor %}
+    </tbody>
+</table>
